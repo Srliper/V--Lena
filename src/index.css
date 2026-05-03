@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Nunito:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 36 33% 97%;
+    --foreground: 24 10% 15%;
+
+    --card: 36 30% 98%;
+    --card-foreground: 24 10% 15%;
+
+    --popover: 36 30% 98%;
+    --popover-foreground: 24 10% 15%;
+
+    --primary: 30 80% 45%;
+    --primary-foreground: 36 33% 97%;
+
+    --secondary: 36 30% 92%;
+    --secondary-foreground: 24 10% 25%;
+
+    --muted: 36 20% 94%;
+    --muted-foreground: 24 8% 50%;
+
+    --accent: 8 75% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 30 20% 88%;
+    --input: 30 20% 88%;
+    --ring: 30 80% 45%;
+
+    --radius: 0.75rem;
+
+    --promo: 8 75% 52%;
+    --promo-foreground: 0 0% 100%;
+    --promo-golden: 42 90% 55%;
+    --warm-cream: 40 40% 95%;
+    --warm-brown: 24 30% 30%;
+
+    --sidebar-background: 36 30% 96%;
+    --sidebar-foreground: 24 10% 25%;
+    --sidebar-primary: 30 80% 45%;
+    --sidebar-primary-foreground: 36 33% 97%;
+    --sidebar-accent: 36 25% 90%;
+    --sidebar-accent-foreground: 24 10% 25%;
+    --sidebar-border: 30 20% 88%;
+    --sidebar-ring: 30 80% 45%;
+
+    --font-heading: 'Playfair Display', serif;
+    --font-body: 'Nunito', sans-serif;
+  }
+
+  .dark {
+    --background: 24 10% 10%;
+    --foreground: 36 33% 95%;
+    --card: 24 10% 13%;
+    --card-foreground: 36 33% 95%;
+    --popover: 24 10% 13%;
+    --popover-foreground: 36 33% 95%;
+    --primary: 30 80% 50%;
+    --primary-foreground: 24 10% 10%;
+    --secondary: 24 15% 18%;
+    --secondary-foreground: 36 33% 90%;
+    --muted: 24 12% 20%;
+    --muted-foreground: 36 15% 60%;
+    --accent: 8 75% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 24 15% 22%;
+    --input: 24 15% 22%;
+    --ring: 30 80% 50%;
+    --sidebar-background: 24 10% 12%;
+    --sidebar-foreground: 36 33% 90%;
+    --sidebar-primary: 30 80% 50%;
+    --sidebar-primary-foreground: 24 10% 10%;
+    --sidebar-accent: 24 12% 18%;
+    --sidebar-accent-foreground: 36 33% 90%;
+    --sidebar-border: 24 15% 22%;
+    --sidebar-ring: 30 80% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+}
+
+@keyframes pulse-promo {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-pulse-promo {
+  animation: pulse-promo 2s ease-in-out infinite;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.6s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
