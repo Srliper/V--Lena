@@ -1,6 +1,10 @@
 import Header from "@/components/Header";
 import PromoCard from "@/components/PromoCard";
 import { promotions } from "@/data/menuData";
+import { buildStoreWhatsAppUrl } from "@/lib/whatsapp";
+
+const promoWhatsAppMessage =
+  "Olá! Vim pelo site da Lanchonete Vó Lena e quero saber das promoções e ofertas. 🥟";
 
 const Promotions = () => {
   return (
@@ -19,7 +23,7 @@ const Promotions = () => {
           <h2 className="font-heading text-2xl font-bold text-foreground mb-3">📱 Quer receber promoções exclusivas?</h2>
           <p className="text-muted-foreground mb-5">Entre no nosso grupo do WhatsApp e fique por dentro de todas as ofertas!</p>
           <a
-            href="https://wa.me/5511999999999"
+            href={buildStoreWhatsAppUrl(promoWhatsAppMessage)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex px-8 py-3 rounded-full bg-accent text-accent-foreground font-bold text-sm shadow-lg"

@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import { DeliveryStatus, useOrders } from "@/contexts/OrderContext";
 import { employees as initialEmployees, Employee } from "@/data/menuData";
-import { Users, CalendarDays, Package, Plus, Edit, Trash2, Search } from "lucide-react";
+import {
+  clearAdminToken,
+  dispatchAdminAuthChange,
+  getAdminToken,
+  setAdminToken,
+} from "@/lib/adminSession";
+import { getApiBaseUrl } from "@/lib/apiBaseUrl";
+import { Users, CalendarDays, Package, Plus, Edit, Trash2, Search, LogOut, RefreshCw, Star } from "lucide-react";
+import { fetchFeedbacksAdmin, type OrderFeedbackRow } from "@/lib/orderFeedback";
+import { toast } from "@/components/ui/sonner";
 
-type Tab = "colaboradores" | "agendamentos" | "pedidos";
+const API_BASE_URL = getApiBaseUrl();
+
+type Tab = "colaboradores" | "agendamentos" | "pedidos" | "avaliacoes";
 
 interface Schedule {
   id: string;
@@ -36,16 +47,47 @@ const statusLabels = {
 };
 
 const Admin = () => {
-  const [tab, setTab] = useState<Tab>("colaboradores");
+  const [authed, setAuthed] = useState(() => !!getAdminToken());
+  const [pwd, setPwd] = useState("");
+  const [loginErr, setLoginErr] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [tab, setTab] = useState<Tab>("pedidos");
   const [employees] = useState<Employee[]>(initialEmployees);
   const [search, setSearch] = useState("");
-  const { orders, isLoading, updateOrderStatus } = useOrders();
+  const [reloadBusy, setReloadBusy] = useState(false);
+  const [feedbacks, setFeedbacks] = useState<OrderFeedbackRow[]>([]);
+  const [feedbacksLoading, setFeedbacksLoading] = useState(false);
+  const { orders, isLoading, updateOrderStatus, refreshOrders } = useOrders();
+
+  useEffect(() => {
+    const sync = () => setAuthed(!!getAdminToken());
+    window.addEventListener("volena-admin-auth", sync);
+    return () => window.removeEventListener("volena-admin-auth", sync);
+  }, []);
 
   const tabs = [
     { id: "colaboradores" as Tab, label: "Colaboradores", icon: Users },
     { id: "agendamentos" as Tab, label: "Agendamentos", icon: CalendarDays },
     { id: "pedidos" as Tab, label: "Pedidos", icon: Package },
+    { id: "avaliacoes" as Tab, label: "Avaliações", icon: Star },
   ];
+
+  const loadFeedbacks = async () => {
+    const token = getAdminToken();
+    if (!token) return;
+    setFeedbacksLoading(true);
+    try {
+      setFeedbacks(await fetchFeedbacksAdmin(token));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao carregar avaliacoes.");
+    } finally {
+      setFeedbacksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (authed && tab === "avaliacoes") loadFeedbacks();
+  }, [authed, tab]);
 
   const filteredEmployees = employees.filter(e =>
     e.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -65,14 +107,147 @@ const Admin = () => {
       await updateOrderStatus(orderId, next);
     } catch (error) {
       console.error(error);
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel atualizar o pedido.");
     }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginErr("");
+    setLoggingIn(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/admin-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pwd }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; token?: string; error?: string };
+      if (!res.ok || !data.ok || !data.token) {
+        setLoginErr(data.error || "Senha incorreta.");
+        return;
+      }
+      setAdminToken(data.token);
+      setPwd("");
+      setAuthed(true);
+      setTab("pedidos");
+      dispatchAdminAuthChange();
+      toast.success("Acesso liberado.");
+      try {
+        const list = await refreshOrders();
+        if (Array.isArray(list)) {
+          toast.message(
+            list.length === 0
+              ? "Nenhum pedido no banco ainda. Finalize um pedido no carrinho para aparecer aqui."
+              : `${list.length} pedido(s) carregados.`,
+          );
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg.includes("401") || msg.includes("nao autorizado")) {
+          setAuthed(false);
+          clearAdminToken();
+          dispatchAdminAuthChange();
+        }
+        toast.error(msg || "Falha ao carregar pedidos. Veja a URL da API abaixo e se `npm run dev` esta rodando.");
+      }
+    } catch {
+      setLoginErr(
+        `Nao foi possivel contatar a API em ${API_BASE_URL}. Confirme que o terminal esta com "npm run dev" (ou "npm run dev:api") e que /api/health abre no navegador.`,
+      );
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleReloadPedidos = async () => {
+    setReloadBusy(true);
+    try {
+      const list = await refreshOrders();
+      if (Array.isArray(list)) {
+        toast.message(list.length ? `${list.length} pedido(s).` : "Lista vazia.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao recarregar.");
+    } finally {
+      setReloadBusy(false);
+    }
+  };
+
+  const handleLogout = () => {
+    clearAdminToken();
+    setAuthed(false);
+    dispatchAdminAuthChange();
+    toast.message("Sessao encerrada.");
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8">
-        <h1 className="font-heading text-3xl font-bold text-foreground mb-6">⚙️ Administração</h1>
+        {!authed ? (
+          <div className="max-w-sm mx-auto bg-card rounded-xl border border-border p-8 shadow-sm mt-8">
+            <h1 className="font-heading text-xl font-bold text-foreground mb-2">Area restrita</h1>
+            <p className="text-muted-foreground text-sm mb-6">Digite a senha da administracao para ver pedidos e dados internos.</p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={pwd}
+                onChange={e => setPwd(e.target.value)}
+                placeholder="Senha"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm"
+              />
+              {loginErr ? <p className="text-destructive text-xs">{loginErr}</p> : null}
+              <button
+                type="submit"
+                disabled={loggingIn}
+                className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-50"
+              >
+                {loggingIn ? "Entrando..." : "Entrar"}
+              </button>
+            </form>
+            <p className="text-[11px] text-muted-foreground break-all mt-4">
+              URL da API usada pelo site:{" "}
+              <code className="bg-muted px-1 rounded">{API_BASE_URL}</code>
+            </p>
+            <p className="text-[11px] mt-2">
+              <a
+                href={`${API_BASE_URL}/api/health`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline font-medium"
+              >
+                Testar API (abrir /api/health)
+              </a>{" "}
+              — deve mostrar <code className="text-xs">ok</code>.
+            </p>
+            <details className="mt-4 text-[11px] text-muted-foreground">
+              <summary className="cursor-pointer font-semibold text-foreground">Ver erro no navegador (F12)</summary>
+              <ol className="list-decimal pl-4 mt-2 space-y-1">
+                <li>Aba <strong>Rede</strong> → tente entrar de novo → clique em <code>admin-login</code> ou <code>orders</code>.</li>
+                <li>
+                  <strong>401</strong> em <code>orders</code>: token invalido ou senha da API diferente. Limpe sessao: Console →{" "}
+                  <code className="break-all">sessionStorage.removeItem(&quot;volena_admin_token&quot;);location.reload()</code>
+                </li>
+                <li>
+                  Falha de rede / bloqueado: API desligada ou URL errada (<code>VITE_API_URL</code> no build).
+                </li>
+              </ol>
+            </details>
+          </div>
+        ) : (
+          <>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className="font-heading text-3xl font-bold text-foreground">⚙️ Administração</h1>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-muted-foreground hover:bg-secondary"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+        </div>
 
         <div className="flex gap-2 mb-6 overflow-x-auto">
           {tabs.map(t => (
@@ -173,16 +348,33 @@ const Admin = () => {
 
         {tab === "pedidos" && (
           <div>
-            <p className="text-muted-foreground text-sm mb-4">Pedidos de delivery em tempo real</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <p className="text-muted-foreground text-sm">Pedidos de delivery em tempo real</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] text-muted-foreground break-all max-w-full sm:max-w-md">
+                  API: <code className="bg-muted px-1 rounded">{API_BASE_URL}</code>
+                </span>
+                <button
+                  type="button"
+                  disabled={reloadBusy}
+                  onClick={handleReloadPedidos}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${reloadBusy ? "animate-spin" : ""}`} />
+                  Recarregar
+                </button>
+              </div>
+            </div>
             <div className="space-y-3">
               {isLoading && (
                 <div className="bg-card rounded-xl border border-border p-5 text-sm text-muted-foreground">
                   Carregando pedidos...
                 </div>
               )}
-              {orders.length === 0 && (
+              {orders.length === 0 && !isLoading && (
                 <div className="bg-card rounded-xl border border-border p-5 text-sm text-muted-foreground">
-                  Nenhum pedido chegou ainda. Quando o cliente fechar o delivery no carrinho, aparece aqui.
+                  Nenhum pedido na lista. Se a API estiver ok, crie um pedido pelo carrinho ou confira o banco em{" "}
+                  <code className="text-xs bg-muted px-1 rounded">server/data/orders.db</code> (SQLite).
                 </div>
               )}
               {orders.map(order => (
@@ -199,8 +391,28 @@ const Admin = () => {
                   <p className="text-sm text-muted-foreground mb-1">{order.itemsSummary}</p>
                   <p className="text-xs text-muted-foreground mb-1">Endereco: {order.address} - {order.neighborhood}</p>
                   <p className="text-xs text-muted-foreground mb-1">Telefone: {order.customerPhone}</p>
+                  {order.feedback ? (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-2">
+                      {"★".repeat(order.feedback.stars)}
+                      {"☆".repeat(5 - order.feedback.stars)}{" "}
+                      {order.feedback.comment ? `— ${order.feedback.comment}` : ""}
+                    </p>
+                  ) : order.status === "entregue" ? (
+                    <p className="text-[10px] text-muted-foreground mb-2">Aguardando avaliacao do cliente</p>
+                  ) : null}
                   <p className="text-xs text-muted-foreground mb-3">
-                    Pagamento: {order.paymentMethod === "pix" ? "PIX" : order.paymentMethod === "cartao" ? "Cartao" : "Dinheiro"}
+                    Pagamento:{" "}
+                    {order.paymentMethod === "online_mercado"
+                      ? order.paymentStatus === "paid"
+                        ? "Mercado Pago (confirmado)"
+                        : order.paymentStatus === "pending_online"
+                          ? "Mercado Pago (pendente)"
+                          : "Mercado Pago (online)"
+                      : order.paymentMethod === "pix"
+                        ? "PIX na entrega"
+                        : order.paymentMethod === "cartao"
+                          ? "Cartao na entrega"
+                          : "Dinheiro"}
                   </p>
                   <div className="flex items-center justify-between">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors[order.status]}`}>
@@ -219,6 +431,49 @@ const Admin = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {tab === "avaliacoes" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-muted-foreground text-sm">Notas dos clientes apos entrega (1 a 5 estrelas)</p>
+              <button
+                type="button"
+                disabled={feedbacksLoading}
+                onClick={loadFeedbacks}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${feedbacksLoading ? "animate-spin" : ""}`} />
+                Atualizar
+              </button>
+            </div>
+            {feedbacksLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+            {!feedbacksLoading && feedbacks.length === 0 && (
+              <p className="text-sm text-muted-foreground bg-card border border-border rounded-xl p-5">
+                Nenhuma avaliacao ainda. Marque pedidos como entregues e o cliente podera avaliar no site.
+              </p>
+            )}
+            <div className="space-y-3">
+              {feedbacks.map(f => (
+                <div key={f.orderId} className="bg-card rounded-xl border border-border p-5">
+                  <div className="flex justify-between gap-2 mb-1">
+                    <span className="font-semibold text-foreground">{f.customerName || f.orderId}</span>
+                    <span className="text-amber-500 text-lg leading-none">
+                      {"★".repeat(f.stars)}
+                      {"☆".repeat(5 - f.stars)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {f.orderId} · {new Date(f.createdAt).toLocaleString("pt-BR")}
+                    {f.total != null ? ` · R$ ${f.total.toFixed(2)}` : ""}
+                  </p>
+                  {f.comment ? <p className="text-sm text-muted-foreground">{f.comment}</p> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+          </>
         )}
       </main>
     </div>

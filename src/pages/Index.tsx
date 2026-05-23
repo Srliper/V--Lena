@@ -21,13 +21,13 @@ const Index = () => {
     : [{ category: categories.find(c => c.id === activeCategory)!, items: filteredItems }];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/90 via-orange-50/40 to-background dark:from-amber-950/30 dark:via-background dark:to-background">
       <Header />
       <HeroBanner />
       <main className="container mx-auto px-4 pb-20">
         <PromoCarousel />
         
-        <section id="cardapio" className="pt-2 pb-8">
+        <section id="cardapio" className="pt-4 pb-10 rounded-3xl mt-4 border border-orange-100/70 dark:border-amber-900/40 bg-gradient-to-br from-white/95 via-orange-50/50 to-amber-100/35 dark:from-card/95 dark:via-background dark:to-background shadow-sm backdrop-blur-sm px-3 sm:px-5 md:px-8">
           <h2 className="font-heading text-2xl font-bold text-foreground mb-1 flex items-center gap-2">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>

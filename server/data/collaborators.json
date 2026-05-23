@@ -1,0 +1,9 @@
+[
+  { "id": "e1", "name": "Maria Silva", "role": "Cozinheira", "phone": "(11) 99999-1111", "email": "maria@volena.com", "schedule": "Seg-Sex 6h-14h", "status": "ativo" },
+  { "id": "e2", "name": "João Santos", "role": "Atendente", "phone": "(11) 99999-2222", "email": "joao@volena.com", "schedule": "Seg-Sex 8h-16h", "status": "ativo" },
+  { "id": "e3", "name": "Ana Costa", "role": "Padeira", "phone": "(11) 99999-3333", "email": "ana@volena.com", "schedule": "Seg-Sáb 5h-13h", "status": "ativo" },
+  { "id": "e4", "name": "Carlos Lima", "role": "Entregador", "phone": "(11) 99999-4444", "email": "carlos@volena.com", "schedule": "Seg-Dom 10h-22h", "status": "ativo" },
+  { "id": "e5", "name": "Fernanda Oliveira", "role": "Caixa", "phone": "(11) 99999-5555", "email": "fernanda@volena.com", "schedule": "Seg-Sex 12h-20h", "status": "férias" },
+  { "id": "e6", "name": "Luis Fernando Bedim", "role": "Gestor", "phone": "(15) 99830-2282", "email": "luis@volena.com", "schedule": "Seg-Dom", "status": "ativo" },
+  { "id": "e7", "name": "Maquinho", "role": "Proprietário", "phone": "(11) 99339-4537", "email": "a.marcos2050@gmail.com", "schedule": "Seg-Dom", "status": "ativo" }
+]

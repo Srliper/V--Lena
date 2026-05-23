@@ -10,7 +10,11 @@ import Index from "./pages/Index";
 import Cart from "./pages/Cart";
 import Promotions from "./pages/Promotions";
 import Admin from "./pages/Admin";
+import CheckoutRetorno from "./pages/CheckoutRetorno";
+import AvaliarPedido from "./pages/AvaliarPedido";
 import NotFound from "./pages/NotFound";
+import IdleWhatsAppNudge from "./components/IdleWhatsAppNudge";
+import DeliveryFeedbackPrompt from "./components/DeliveryFeedbackPrompt";
 
 const queryClient = new QueryClient();
 
@@ -23,11 +27,15 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <IdleWhatsAppNudge />
+              <DeliveryFeedbackPrompt />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/carrinho" element={<Cart />} />
                 <Route path="/promocoes" element={<Promotions />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/checkout/retorno" element={<CheckoutRetorno />} />
+                <Route path="/avaliar/:orderId" element={<AvaliarPedido />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

@@ -2,8 +2,7 @@ import { Flame } from "lucide-react";
 import heroFundoRealista from "@/assets/hero-coxinha-pastel-realista.png";
 
 /**
- * Fundo proprio 100% vetorial + CSS (sem foto).
- * Inspiracao: tons amarelo-ouro, lanchonete quente, pasteis na cesta (formas abstratas).
+ * Fundo com foto (coxinhas, pastéis e molhos) + gradientes (tons quentes da lanchonete).
  */
 function FundoProprio() {
   return (
