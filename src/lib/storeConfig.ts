@@ -4,25 +4,38 @@ export const STORE_CEP_DIGITS =
     ? String(import.meta.env.VITE_STORE_CEP).replace(/\D/g, "")
     : "";
 
-/** Seg–Dom, horários exibidos e usados para aberto/fechado (fus horário local). */
+/** Horários exibidos e usados para aberto/fechado (fuso horário local). */
 export const STORE_HOURS = {
-  weekdays: [0, 1, 2, 3, 4, 5, 6] as const,
-  openMinutes: 6 * 60 + 30, // 06:30
-  closeMinutes: 22 * 60, // 22:00
+  weekday: {
+    openMinutes: 6 * 60 + 30, // 06:30
+    closeMinutes: 24 * 60, // 00:00 (meia-noite)
+  },
+  weekend: {
+    openMinutes: 6 * 60 + 30, // 06:30
+    closeMinutes: 14 * 60, // 14:00
+  },
 };
+
+function hoursForDay(day: number) {
+  return day === 0 || day === 6 ? STORE_HOURS.weekend : STORE_HOURS.weekday;
+}
+
+function formatMinutes(minutes: number): string {
+  const total = minutes % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
 
 export function isStoreOpenNow(): boolean {
   const now = new Date();
-  const d = now.getDay();
-  if (!STORE_HOURS.weekdays.includes(d as (typeof STORE_HOURS.weekdays)[number])) return false;
+  const { openMinutes, closeMinutes } = hoursForDay(now.getDay());
   const m = now.getHours() * 60 + now.getMinutes();
-  return m >= STORE_HOURS.openMinutes && m < STORE_HOURS.closeMinutes;
+  return m >= openMinutes && m < closeMinutes;
 }
 
 export function formatStoreHoursLabel(): string {
-  const o = `${Math.floor(STORE_HOURS.openMinutes / 60)}:${String(STORE_HOURS.openMinutes % 60).padStart(2, "0")}`;
-  const c = `${Math.floor(STORE_HOURS.closeMinutes / 60)}:${String(STORE_HOURS.closeMinutes % 60).padStart(2, "0")}`;
-  return `Seg–Dom ${o} às ${c}`;
+  const weekday = `Seg–Sex ${formatMinutes(STORE_HOURS.weekday.openMinutes)} às ${formatMinutes(STORE_HOURS.weekday.closeMinutes)}`;
+  const weekend = `Sáb–Dom ${formatMinutes(STORE_HOURS.weekend.openMinutes)} às ${formatMinutes(STORE_HOURS.weekend.closeMinutes)}`;
+  return `${weekday} • ${weekend}`;
 }
 
 export const FRETE_FALLBACK = 8;
