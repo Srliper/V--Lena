@@ -24,6 +24,7 @@ function resolveViteCacheDir(): string {
 }
 
 export default defineConfig(({ mode }) => ({
+  base: process.env.VITE_BASE?.trim() || "/",
   cacheDir: resolveViteCacheDir(),
   server: {
     host: "::",
